@@ -122,19 +122,23 @@ namespace NiceHashBot
                 Parameters[0] = OrderStats;
                 Parameters[1] = MaxPrice;
                 Parameters[2] = Limit;
-                HandlerMethod.Invoke(null, Parameters);
-                if ((double)Parameters[1] != MaxPrice)
+                try
                 {
-                    MaxPrice = (double)Parameters[1];
-                    if (MaxPrice < 0) MaxPrice = 0.001;
-                    LinkedInstance.SetMaximalPrice(MaxPrice);
+                    HandlerMethod.Invoke(null, Parameters);
+                    if ((double)Parameters[1] != MaxPrice)
+                    {
+                        MaxPrice = (double)Parameters[1];
+                        if (MaxPrice < 0) MaxPrice = 0.001;
+                        LinkedInstance.SetMaximalPrice(MaxPrice);
+                    }
+                    if ((double)Parameters[2] != Limit)
+                    {
+                        Limit = (double)Parameters[2];
+                        if (Limit < 0) Limit = 0;
+                        LinkedInstance.SetLimit(Limit);
+                    }
                 }
-                if ((double)Parameters[2] != Limit)
-                {
-                    Limit = (double)Parameters[2];
-                    if (Limit < 0) Limit = 0;
-                    LinkedInstance.SetLimit(Limit);
-                }
+                catch { }
             }
         }
 

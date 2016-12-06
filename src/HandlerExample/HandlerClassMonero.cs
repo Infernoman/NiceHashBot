@@ -24,7 +24,7 @@ public class HandlerClass
         if (OrderStats == null) return;
 
         // Retreive JSON data from API server. Replace URL with your own API request URL.
-        string JSONData = GetHTTPResponseInJSON("https://whattomine.com/coins/166.json");
+        string JSONData = GetHTTPResponseInJSON("https://whattomine.com/coins/101.json");
         if (JSONData == null) return;
 
         // Serialize returned JSON data.
@@ -43,8 +43,8 @@ public class HandlerClass
             double hashrate = double.Parse(Response.nethash, CultureInfo.InvariantCulture);
             double meanBlockTime = double.Parse(Response.block_time, CultureInfo.InvariantCulture);
 
-            // Calculate mining profitability in BTC per 1000 sols of hashpower.
-            double HT = meanBlockTime / (1000 / hashrate);
+            // Calculate mining profitability in BTC per 1000000 hashpower.
+            double HT = meanBlockTime / (1000000 / hashrate);
             double CPD = Response.block_reward * 24.0 * 3600.0 / HT;
             double C = CPD * Response.exchange_rate;
 

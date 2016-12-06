@@ -1,3 +1,7 @@
+# My fork
+This is my fork that has fixed NullPointerExeption when invoking Handler that contains try/catch.
+Also I added two custom handlers, one is to mine profitable ZCash and second is for Monero.
+
 # NiceHashBot
 NiceHash bot for automatic order management.
 
