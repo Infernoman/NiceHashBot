@@ -6,6 +6,7 @@ using System.Net; // For generating HTTP requests and getting responses.
 using NiceHashBotLib; // Include this for Order class, which contains stats for our order.
 using Newtonsoft.Json; // For JSON parsing of remote APIs.
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 public class HandlerClass
 {
@@ -23,39 +24,14 @@ public class HandlerClass
         // Perform check, if order has been created at all. If not, stop executing the code.
         if (OrderStats == null) return;
 
-        // Retreive JSON data from API server. Replace URL with your own API request URL.
-        string JSONData = GetHTTPResponseInJSON("https://whattomine.com/coins/166.json");
-        if (JSONData == null) return;
-
-        // Serialize returned JSON data.
-        WhatToMineResponse Response;
         try
         {
-            Response = JsonConvert.DeserializeObject<WhatToMineResponse>(JSONData);
-        }
-        catch
-        {
-            return;
-        }
-
-        try
-        {
-            double hashrate = double.Parse(Response.nethash, CultureInfo.InvariantCulture);
-            double meanBlockTime = double.Parse(Response.block_time, CultureInfo.InvariantCulture);
-
-            // Calculate mining profitability in BTC per 1000 sols of hashpower.
-            double HT = meanBlockTime / (1000 / hashrate);
-            double CPD = Response.block_reward * 24.0 * 3600.0 / HT;
-            double C = CPD * Response.exchange_rate;
-
-            // Subtract service fees.
-            C -= 0.03 * C;
-
-            // Subtract minimal % profit we want to get.
-            C -= 0.10 * C;
+            // get LRP
+            string algoName = APIWrapper.ALGORITHM_NAME[OrderStats.Algorithm];
+            double LRP = getCurrencyLRP(algoName);
 
             // Set new maximal price.
-            MaxPrice = Math.Floor(C * 10000) / 10000;
+            MaxPrice = LRP;
 
             // Example how to print some data on console...
             Console.WriteLine("Adjusting order #" + OrderStats.ID.ToString() + " maximal price to: " + MaxPrice.ToString("F4"));
@@ -135,6 +111,20 @@ public class HandlerClass
         catch (Exception ex)
         {
             return null;
+        }
+    }
+
+    private static double getCurrencyLRP(string algo)
+    {
+        using (var client = new WebClient())
+        {
+            var html = client.DownloadString("https://www.nicehash.com/jq_getfirstpagetable.jsp");
+            html = html.Substring(html.LastIndexOf(algo));
+            html = html.Substring(html.IndexOf("class=\"tdstat\">"));
+            html = html.Substring(html.IndexOf(">") + 1);
+            html = html.Substring(0, html.IndexOf("<"));
+            html = Regex.Replace(html, "[^0-9.]", "");
+            return double.Parse(html);
         }
     }
 

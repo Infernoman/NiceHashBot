@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using NiceHashBotLib;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace NiceHashBot
 {
@@ -72,13 +74,24 @@ namespace NiceHashBot
                 {
                     if (tempTick % 120 == 0)
                     {
-                        if((Orders[i].OrderStats.Price > 1.1 * Orders[i].MaxPrice) && (Orders[i].OrderStats.Speed > 0))
+                        try
                         {
-                            OrderContainer copy = new OrderContainer(Orders[i]);
-                            OrderContainer.Remove(i);
-                            OrderContainer.Add(copy.ServiceLocation, copy.Algorithm, copy.MaxPrice, copy.Limit, copy.PoolData, copy.ID, copy.StartingPrice, copy.StartingAmount, copy.HandlerDLL);
-                            Console.WriteLine("Order recreated");
+                            string algoName = APIWrapper.ALGORITHM_NAME[Orders[i].OrderStats.Algorithm];
+                            double LRP = getCurrencyLRP(algoName);
+                            if (Orders[i].OrderStats.Speed == 0)
+                            {
+                                OrderContainer.SetMaxPrice(i, LRP);
+                                Console.WriteLine("Setting order # " + Orders[i].OrderStats.ID.ToString() + " max price to: " + LRP.ToString());
+                            }
+                            else if (Orders[i].OrderStats.Price > 1.07 * LRP)
+                            {
+                                OrderContainer copy = new OrderContainer(Orders[i]);
+                                OrderContainer.Remove(i);
+                                OrderContainer.Add(copy.ServiceLocation, copy.Algorithm, 1.07 * LRP, copy.Limit, copy.PoolData, copy.ID, copy.StartingPrice, copy.StartingAmount, copy.HandlerDLL);
+                                Console.WriteLine("Order recreated");
+                            }
                         }
+                        catch { }
                     }
                     else
                     {
@@ -204,6 +217,20 @@ namespace NiceHashBot
             if (FNI.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 OrderContainer.SetMaxPrice(listView1.SelectedIndices[0], FNI.Value);
+            }
+        }
+
+        private double getCurrencyLRP(string algo)
+        {
+            using (var client = new WebClient())
+            {
+                var html = client.DownloadString("https://www.nicehash.com/jq_getfirstpagetable.jsp");
+                html = html.Substring(html.LastIndexOf(algo));
+                html = html.Substring(html.IndexOf("class=\"tdstat\">"));
+                html = html.Substring(html.IndexOf(">") + 1);
+                html = html.Substring(0, html.IndexOf("<"));
+                html = Regex.Replace(html, "[^0-9.]", "");
+                return double.Parse(html);
             }
         }
     }
